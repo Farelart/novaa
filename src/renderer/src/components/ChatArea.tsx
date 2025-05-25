@@ -1,33 +1,42 @@
-"use client"
+/* eslint-disable prettier/prettier */
+'use client'
 
-import { ChevronDown, Info, X } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useChatStore } from "../store";
+import { ChevronDown, Info, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { useChatStore } from '../store'
 
-import models from "../utils/models";
+import models from '../utils/models'
 
 export const ChatArea = () => {
   // Local states
   const [isPopupVisible, setIsPopupVisible] = useState(false)
-  const [inputMessage, setInputMessage] = useState("")
-  const [messages, setMessages] = useState<{ from: "user" | "bot"; text: string }[]>([])
+  const [inputMessage, setInputMessage] = useState('')
+  const [messages, setMessages] = useState<{ from: 'user' | 'bot'; text: string }[]>([])
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   // Store states & actions
-  const { isProcessing, error, chatConfig, updateChatConfig, handleChatMessage, clearError } = useChatStore()
+  const { isProcessing, error, chatConfig, updateChatConfig, handleChatMessage, clearError } =
+    useChatStore()
 
   // Local config states
   const [selectedModel, setSelectedModel] = useState(chatConfig.model)
-  const [creativity, setCreativity] = useState("Medium")
-  const [systemInstructions, setSystemInstructions] = useState("")
+  const [creativity, setCreativity] = useState('Medium')
+  const [systemInstructions, setSystemInstructions] = useState('')
 
   // Sync local config with store
   useEffect(() => {
     updateChatConfig({
       model: selectedModel,
-      temperature: creativity === "Low" ? 0.3 : creativity === "Medium" ? 0.7 : 1,
-      systemInstructions,
+      temperature: creativity === 'Low' ? 0.3 : creativity === 'Medium' ? 0.7 : 1,
+      systemInstructions
     })
   }, [selectedModel, creativity, systemInstructions, updateChatConfig])
+
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
+  }, [messages])
 
   const togglePopup = () => setIsPopupVisible(!isPopupVisible)
 
@@ -37,12 +46,12 @@ export const ChatArea = () => {
     clearError()
 
     const userMessage = inputMessage.trim()
-    setMessages((prev) => [...prev, { from: "user", text: userMessage }])
-    setInputMessage("")
+    setMessages((prev) => [...prev, { from: 'user', text: userMessage }])
+    setInputMessage('')
 
     try {
       const reply = await handleChatMessage(1, userMessage)
-      setMessages((prev) => [...prev, { from: "bot", text: reply }])
+      setMessages((prev) => [...prev, { from: 'bot', text: reply }])
     } catch (err) {
       // erreur gérée par le store (error)
       console.error(err)
@@ -51,19 +60,24 @@ export const ChatArea = () => {
 
   // Envoi message à l'appui de la touche Enter
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       sendMessage()
     }
   }
 
   return (
-    <section className="flex-1 flex flex-col p-4 overflow-hidden transition-all duration-[850ms] ease-in-out">
+    <section className="flex-1 flex flex-col h-full p-4 overflow-hidden transition-all duration-[850ms] ease-in-out">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-4 p-2 rounded-md">
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto min-h-0 space-y-4 p-2 rounded-md"
+      >
         {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.from === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`p-3 rounded-lg max-w-xs ${msg.from === "user" ? "bg-red-500/60 text-white" : "bg-gray-700 text-white"}`}>
+          <div key={i} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div
+              className={`p-3 rounded-md max-w-lg ${msg.from === 'user' ? 'bg-red-500/60 text-white' : 'text-white'}`}
+            >
               {msg.text}
             </div>
           </div>
@@ -71,9 +85,7 @@ export const ChatArea = () => {
         {isProcessing && (
           <div className="flex justify-start text-gray-400 italic">AI is typing...</div>
         )}
-        {error && (
-          <div className="text-red-400 font-semibold">Error: {error}</div>
-        )}
+        {error && <div className="text-red-400 font-semibold">Error: {error}</div>}
       </div>
 
       {/* Input & Settings */}

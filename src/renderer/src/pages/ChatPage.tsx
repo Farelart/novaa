@@ -7,11 +7,11 @@ import { Sidebar } from '../components/Sidebar'
 import { useUserStore } from '../store/userStore'
 const Chat = () => {
   const [isSidebarVisible, setIsSidebarVisible] = useState(true)
-  const { user, fetchUser, loading, error } = useUserStore();
+  const { user, fetchUser, loading, error } = useUserStore()
 
   useEffect(() => {
-    fetchUser();
-  },[]);
+    fetchUser()
+  }, [])
 
   const handleToggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible)
@@ -22,7 +22,7 @@ const Chat = () => {
 
   return (
     <div
-      className="min-h-screen rounded-[10px] overflow-hidden bg-[rgba(0,0,0,0.7)] border border-[rgba(255,255,255,0.28)] flex flex-col"
+      className="min-h-screen max-h-screen rounded-[10px] overflow-hidden bg-[rgba(0,0,0,0.7)] border border-[rgba(255,255,255,0.28)] flex flex-col"
       style={{
         backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
