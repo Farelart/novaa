@@ -12,6 +12,7 @@ const useChatStore = create(
         baseURL: '',
         temperature: 0.7,
         max_token: 1000,
+        instruction: '',
       },
 
       // Actions
@@ -28,6 +29,7 @@ const useChatStore = create(
       handleChatMessage: async (conversationId, userMessage, config = null) => {
         const { chatConfig } = get();
         const finalConfig = config || chatConfig;
+        console.log('Final chat config:', finalConfig);
         
         set({ isProcessing: true, error: null });
         

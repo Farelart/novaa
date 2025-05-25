@@ -20,10 +20,11 @@ const useMessageStore = create(
       fetchMessages: async (conversationId) => {
         set({ loading: true, error: null });
         try {
-          const response = await fetch(`/api/conversations/${conversationId}/messages`);
+          const response = await fetch(`http://localhost:3001/api/chat/conversations/${conversationId}/messages`);
           if (!response.ok) throw new Error('Failed to fetch messages');
           const messages = await response.json();
-          set({ messages, loading: false });
+          console.log('Fetched messages:', messages);
+          set({ messages:messages, loading: false });
         } catch (error) {
           set({ error: error.message, loading: false });
         }
@@ -33,7 +34,7 @@ const useMessageStore = create(
       createMessage: async (messageData) => {
         set({ loading: true, error: null });
         try {
-          const response = await fetch('/api/messages', {
+          const response = await fetch('http://localhost:3001/api/chat/messages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(messageData),
@@ -56,7 +57,7 @@ const useMessageStore = create(
       deleteMessage: async (id) => {
         set({ loading: true, error: null });
         try {
-          const response = await fetch(`/api/messages/${id}`, {
+          const response = await fetch(`http://localhost:3001/api/chat/messages/${id}`, {
             method: 'DELETE',
           });
           if (!response.ok) throw new Error('Failed to delete message');

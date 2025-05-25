@@ -23,6 +23,8 @@ exports.getUser = async (req, res) => {
   res.json(user);
 };
 
+
+
 // Update
 exports.updateUser = async (req, res) => {
   try {

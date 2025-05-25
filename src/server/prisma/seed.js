@@ -19,9 +19,9 @@ async function main() {
     
   }
 
-  const existingPlan = await prisma.plan.findFirst()
+  let existingPlan = await prisma.plan.findFirst()
   if(!existingPlan){
-    const plan = await prisma.plan.create({
+    existingPlan = await prisma.plan.create({
         data: {
           name: 'Free',
           limit: 100,
@@ -38,9 +38,9 @@ async function main() {
           email: 'none',
           hotkey: 'space',
           appearance: 'system',
-          defaultModel: 'gemini-flash',
+          defaultModel: 'gemini-2.0-flash',
           plan: {
-            connect: { id: plan.id }
+            connect: { id: existingPlan.id }
           }
         }
       });

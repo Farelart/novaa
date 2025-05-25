@@ -6,6 +6,7 @@ const chatController = require('../controllers/chatController')
 // Conversations
 router.get('/users/:userId/conversations', chatController.getConversations);
 router.get('/conversations/:id', chatController.getConversationById);
+router.put('/conversations/:id', chatController.updateConversation);
 router.post('/conversations', chatController.createConversation);
 router.delete('/conversations/:id', chatController.deleteConversation);
 

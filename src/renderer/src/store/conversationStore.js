@@ -56,12 +56,41 @@ const useConversationStore = create(
             currentConversation: newConversation,
             loading: false,
           }));
+          set({ currentConversation: newConversation });
           return newConversation;
         } catch (error) {
           set({ error: error.message, loading: false });
           throw error;
         }
       },
+
+      // Ajout de la méthode updateConversation
+      updateConversation: async (id, updates) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await fetch(`http://localhost:3001/api/chat/conversations/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates),
+          });
+          if (!response.ok) throw new Error('Failed to update conversation');
+          const updatedConversation = await response.json();
+
+          set((state) => ({
+            conversations: state.conversations.map((conv) =>
+              conv.id === id ? { ...conv, ...updatedConversation } : conv
+            ),
+            currentConversation:
+              state.currentConversation?.id === id
+                ? { ...state.currentConversation, ...updatedConversation }
+                : state.currentConversation,
+            loading: false,
+          }));
+        } catch (error) {
+          set({ error: error.message, loading: false });
+        }
+      },
+
 
       // Delete conversation
       deleteConversation: async (id) => {

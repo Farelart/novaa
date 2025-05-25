@@ -1,4 +1,4 @@
-const models = [
+exports.models = [
     {
         name: 'gemini-1.5-flash',
         displayName: 'Gemini 1.5 Flash',
@@ -63,5 +63,3 @@ const models = [
         provider: 'Groq',
     },
 ];
-
-export default models;

@@ -4,13 +4,14 @@ const chatService = require('../AiServices/chatService.js');
 
 exports.handleChatMessage = async (req, res) => {
   try {
-    const { conversationId, userMessage, model, baseURL, temperature, max_token } = req.body;
+    const { conversationId, userMessage, model, baseURL, temperature, max_token, instruction } = req.body;
+    console.log('Received request body:', req.body);
     
     if (!conversationId || !userMessage) {
       return res.status(400).json({ error: 'conversationId and userMessage are required' });
     }
-    console.log('handleChatMessage called with:', { conversationId, userMessage, model, baseURL, temperature, max_token });
-    const reply = await chatService.handleChatMessage(conversationId, userMessage, { model:model, baseURL:baseURL, temperature:temperature, max_token:max_token });
+    console.log('handleChatMessage called with:', { conversationId, userMessage, model, baseURL, temperature, max_token, instruction });
+    const reply = await chatService.handleChatMessage(conversationId, userMessage, { model:model, baseURL:baseURL, temperature:temperature, max_token:max_token,instruction:instruction });
     
     res.json({ reply });
   } catch (error) {
@@ -66,10 +67,31 @@ exports.createConversation = async (req, res) => {
   }
 };
 
+
+
+exports.updateConversation = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { title, instruction, model, temperature } = req.body;
+
+    const updatedConversation = await prisma.conversation.update({
+      where: { id },
+      data: { title, instruction , model, temperature},
+    });
+
+    res.json(updatedConversation);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
 exports.deleteConversation = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    console.log('Deleting conversation with ID:', id);
     await prisma.conversation.delete({ where: { id } });
+    console.log('Conversation deleted:', id);
     res.json({ message: 'Conversation deleted' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -124,7 +146,9 @@ exports.createMessage = async (req, res) => {
 exports.deleteMessage = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    console.log('Deleting message with ID:', id);
     await prisma.message.delete({ where: { id } });
+    console.log('Message deleted:', id);
     res.json({ message: 'Message deleted' });
   } catch (error) {
     res.status(500).json({ error: error.message });

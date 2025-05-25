@@ -1,23 +1,18 @@
 /* eslint-disable prettier/prettier */
 
 import { ChatArea } from '@renderer/components/ChatArea'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { DraggableTopBar } from '../components/DraggableTopBar'
 import { Sidebar } from '../components/Sidebar'
-import { useUserStore } from '../store/userStore'
+import { useConversationStore } from '../store'
 const Chat = () => {
   const [isSidebarVisible, setIsSidebarVisible] = useState(true)
-  const { user, fetchUser, loading, error } = useUserStore();
-
-  useEffect(() => {
-    fetchUser();
-  },[]);
+  const { currentConversation } = useConversationStore();
+  
 
   const handleToggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible)
   }
-
-  const [message, setMessage] = useState('')
   // Exemple dans App.tsx ou un hook
 
   return (

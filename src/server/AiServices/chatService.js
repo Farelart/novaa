@@ -1,6 +1,7 @@
 const prisma = require('../models/prismaClient.js');
-const openaiClient = require('./openaiClient');
+const {createOpenAIClientForModel} = require('./openaiClient');
 const tools = require('./tools');
+const modelList = require('../utils/models.js')
 // Définition des outils disponibles
 const availableTools = [
     {
@@ -46,6 +47,15 @@ const toolFunctions = {
   get_weather: tools.weatherTool,
 };
 
+function getBaseURLFromModelName(modelName) {
+  const model = modelList.find(m => m.name === modelName);
+  return model ? model.baseURL : null;
+}
+function getProviderFromModelName(modelName) {
+  const model = modelList.find(m => m.name === modelName);
+  return model ? model.baseURL : null;
+}
+
 async function handleChatMessage(conversationId, userMessage, options = {}) {
   try {
     console.log('params:', { conversationId, userMessage, options });
@@ -55,18 +65,33 @@ async function handleChatMessage(conversationId, userMessage, options = {}) {
       orderBy: { createdAt: 'asc' },
     });
 
+    
+
+
     // 2. Préparer les messages pour OpenAI
-    const messagesForOpenAI = messagesHistory.map(m => ({
-      role: m.role,
-      content: m.content,
-      ...(m.toolCalls && { tool_calls: JSON.parse(m.toolCalls) }),
-      ...(m.toolCallId && { tool_call_id: m.toolCallId })
-    }));
+    const messagesForOpenAI = [];
+
+    if (options.instruction) {
+      messagesForOpenAI.push({
+        role: 'system',
+        content: options.instruction,
+      });
+    }
+
+    messagesForOpenAI.push(
+      ...messagesHistory.map(m => ({
+        role: m.role,
+        content: m.content,
+        ...(m.toolCall && { tool_calls: JSON.parse(m.toolCall) }),
+      }))
+    );
 
     messagesForOpenAI.push({ role: 'user', content: userMessage });
 
+    console.log('messagesForOpenAI:', messagesForOpenAI);
+
     // 3. Configuration OpenAI avec outils
-    if (options.model) openaiClient.setModel(options.model, options.baseURL);
+    const openaiClient = createOpenAIClientForModel(options.model);
     
     const completion = await openaiClient.createChatCompletion(messagesForOpenAI, {
       temperature: options.temperature ?? 0.7,
@@ -114,17 +139,6 @@ async function handleChatMessage(conversationId, userMessage, options = {}) {
               content: JSON.stringify(result),
               tool_call_id: toolCall.id
             });
-
-            // Sauvegarder le résultat de l'outil
-            // await prisma.message.create({
-            //   data: {
-            //     conversationId,
-            //     role: 'tool',
-            //     content: JSON.stringify(result),
-            //     toolCallId: toolCall.id,
-            //     toolName: functionName
-            //   },
-            // });
           }
         } catch (error) {
           console.error(`Erreur lors de l'exécution de l'outil ${toolCall.function.name}:`, error);

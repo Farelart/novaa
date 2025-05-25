@@ -1,14 +1,31 @@
 /* eslint-disable prettier/prettier */
-import { useEffect, useMemo, useState } from 'react'
-import { useConversationStore } from '../store'
-
+import { useEffect, useMemo, useState } from 'react';
+import { DeleteConfirmationDialog } from '../components/delete-confirmation-dialog';
+import { useConversationStore, useMessageStore } from '../store';
+import { useCurrentUser } from '../store/userStore';
+import { formatRelativeTime } from '../utils/dateFormat';
 type SidebarProps = {
   isVisible?: boolean
   userId: number // ID de l'utilisateur connecté
 }
 
+
 export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
   const [searchQuery, setSearchQuery] = useState('')
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [toDeleteId, setToDeleteId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const {
+    user,
+    loading: userLoading,
+    error: userError,
+    fetchUser,
+    updateProfile,
+    updatePreferences,
+    hasFreePlan,
+    getRemainingUsage,
+  } = useCurrentUser();
   
   // Zustand store hooks
   const {
@@ -19,13 +36,19 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
     fetchConversations,
     setCurrentConversation,
     createConversation,
-    deleteConversation
+    deleteConversation,
+    updateConversation
   } = useConversationStore()
+  const { fetchMessages, messages, clearMessages } = useMessageStore()
 
   // Fetch conversations when component mounts or userId changes
   useEffect(() => {
     if (userId) {
+      fetchUser()
       fetchConversations(userId)
+      // if(conversations.length === 0) {
+      //   createConversation(userId, 'New Chat')
+      // }
     }
   }, [userId, fetchConversations])
 
@@ -92,29 +115,46 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
   }
 
   // Handle conversation selection
-  const handleConversationSelect = (conversation) => {
-    setCurrentConversation(conversation)
+  const handleConversationSelect = async (conversation) => {
+    try {
+      setCurrentConversation(conversation)
+      await fetchMessages(conversation.id)
+    } catch (error) {
+      console.error('Failed to fetch messages for conversation:', error)
+    }
   }
+
 
   // Handle creating new conversation
   const handleNewChat = async () => {
     try {
       await createConversation(userId, 'New Chat')
+      clearMessages()
+      // fetchMessages(conv.id) // Fetch messages for the new conversation
     } catch (error) {
       console.error('Failed to create new conversation:', error)
     }
   }
-
+  const handleConfirmDelete = async (toDeleteId) => {
+    setIsDeleting(true)
+    try {
+      await deleteConversation(toDeleteId)
+      if (currentConversation?.id === toDeleteId) {
+        setCurrentConversation(null) // Clear current conversation if deleted
+        clearMessages() // Clear messages in chat area
+      }
+      setShowDeleteDialog(false)
+    } catch (error) {
+      console.error("Failed to delete conversation:", error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
   // Handle conversation deletion
   const handleDeleteConversation = async (e, conversationId) => {
     e.stopPropagation() // Prevent conversation selection
-    if (window.confirm('Are you sure you want to delete this conversation?')) {
-      try {
-        await deleteConversation(conversationId)
-      } catch (error) {
-        console.error('Failed to delete conversation:', error)
-      }
-    }
+    setToDeleteId(conversationId)
+    setShowDeleteDialog(true)
   }
 
   const handleOpenSettings = () => {
@@ -142,7 +182,7 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
                   {conversation.title || 'Untitled Chat'}
                 </h3>
                 <p className="text-xs text-gray-300 truncate">
-                  {getConversationSnippet(conversation)}
+                  {formatRelativeTime(conversation.createdAt)}
                 </p>
               </div>
               
@@ -242,6 +282,7 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
         )}
       </div>
 
+
       {/* Footer */}
       <footer className="p-3 border-t border-white/10">
         <div
@@ -249,14 +290,26 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
           onClick={handleOpenSettings}
         >
           <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-sm font-semibold">U</span>
+            <span className="text-white text-sm font-semibold">{user?.name=='none'? 'U' : user?.name.slice(0)}</span>
           </div>
           <div className="text-sm flex-1 min-w-0">
-            <p className="text-white font-semibold truncate">User Name</p>
-            <p className="text-gray-400 truncate">user@example.com</p>
+            <p className="text-white font-semibold truncate">{user?.name=='none'? 'User' : user?.name}</p>
+            <p className="text-gray-400 truncate">{user?.email=='none'? 'User' : user?.email}</p>
           </div>
         </div>
       </footer>
+
+
+      <DeleteConfirmationDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={() => handleConfirmDelete(toDeleteId)}
+        isLoading={isDeleting}
+        title="Delete Conversation"
+        description={`Are you sure you want to delete ? This action cannot be undone.`}
+      />
     </aside>
+
+    
   )
 }
