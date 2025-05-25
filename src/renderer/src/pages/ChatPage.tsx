@@ -10,6 +10,7 @@ const Chat = () => {
   const { currentConversation } = useConversationStore();
   
 
+
   const handleToggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible)
   }
@@ -17,7 +18,7 @@ const Chat = () => {
 
   return (
     <div
-      className="min-h-screen rounded-[10px] overflow-hidden bg-[rgba(0,0,0,0.7)] border border-[rgba(255,255,255,0.28)] flex flex-col"
+      className="min-h-screen max-h-screen rounded-[10px] overflow-hidden bg-[rgba(0,0,0,0.7)] border border-[rgba(255,255,255,0.28)] flex flex-col"
       style={{
         backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',

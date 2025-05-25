@@ -58,50 +58,52 @@ function createWindow(): void {
   })
 
   function createSettingsWindow(): void {
-  settingsWindow = new BrowserWindow({
-    title: 'Settings - novaa',
-    width: 700,
-    height: 500,
-    show: false,
-    autoHideMenuBar: true,
-    transparent: true,
-    resizable: true,
-    frame: false,
-    
-    modal: true, // Make it modal
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: true,
-      contextIsolation: true
+    settingsWindow = new BrowserWindow({
+      title: 'Settings - novaa',
+      width: 700,
+      height: 500,
+      show: false,
+      autoHideMenuBar: true,
+      transparent: true,
+      resizable: true,
+      frame: false,
+
+      modal: true, // Make it modal
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.js'),
+        sandbox: true,
+        contextIsolation: true,
+        webviewTag: true
+      }
+    })
+
+    settingsWindow.on('ready-to-show', () => {
+      settingsWindow!.show()
+    })
+
+    // This is the key change - we need to explicitly route to /settings
+    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+      // For HashRouter, the path should be part of the hash
+      settingsWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/#/settings`)
+    } else {
+      settingsWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+        hash: 'settings' // This correctly tells HashRouter to look for the #settings route
+      })
     }
-  })
 
-  settingsWindow.on('ready-to-show', () => {
-    settingsWindow!.show()
-  })
-
-  // This is the key change - we need to explicitly route to /settings
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    settingsWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/settings`)
-  } else {
-    settingsWindow.loadFile(join(__dirname, '../renderer/index.html'), {
-      hash: 'settings' // Changed from '/settings' to 'settings'
+    settingsWindow.on('closed', () => {
+      settingsWindow = null
     })
   }
 
-  settingsWindow.on('closed', () => {
-    settingsWindow = null
+  // Add this near your other IPC handlers
+  ipcMain.on('open-settings-window', () => {
+    if (settingsWindow === null) {
+      createSettingsWindow()
+    } else {
+      settingsWindow.focus()
+    }
   })
-}
-
-// Add this near your other IPC handlers
-ipcMain.on('open-settings-window', () => {
-  if (settingsWindow === null) {
-    createSettingsWindow()
-  } else {
-    settingsWindow.focus()
-  }
-})
 
   mainWindow.on('ready-to-show', () => {
     mainWindow!.show()

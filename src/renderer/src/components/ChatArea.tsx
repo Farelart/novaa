@@ -1,11 +1,13 @@
-"use client"
+/* eslint-disable prettier/prettier */
+'use client'
 
 import { ChevronDown, Info, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useChatStore, useConversationStore, useMessageStore } from "../store";
 import { useCurrentUser } from '../store/userStore';
 
-import models from "../utils/models";
+
+import models from '../utils/models';
 
 export const ChatArea = () => {
   // Local states
@@ -14,8 +16,10 @@ export const ChatArea = () => {
   const [messages, setMessages] = useState<{ from: "user" | "assistant"; text: string }[]>([])
 
 
+
   // Store states & actions
-  const { isProcessing, error, chatConfig, updateChatConfig, handleChatMessage, clearError } = useChatStore()
+  const { isProcessing, error, chatConfig, updateChatConfig, handleChatMessage, clearError } =
+    useChatStore()
 
   const {
     user,
@@ -39,6 +43,7 @@ export const ChatArea = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const chatWindow = useRef<HTMLDivElement>(null)
   const prevConversationId = useRef<string | null>(null);
+
   // Sync local config with store
   useEffect(() => {
     fetchUser()
@@ -91,6 +96,7 @@ export const ChatArea = () => {
   
 
 
+
   const togglePopup = () => setIsPopupVisible(!isPopupVisible)
 
 
@@ -100,8 +106,8 @@ export const ChatArea = () => {
     clearError()
 
     const userMessage = inputMessage.trim()
-    setMessages((prev) => [...prev, { from: "user", text: userMessage }])
-    setInputMessage("")
+    setMessages((prev) => [...prev, { from: 'user', text: userMessage }])
+    setInputMessage('')
 
     try {
       if (!currentConversation) {
@@ -181,7 +187,7 @@ export const ChatArea = () => {
 
   // Envoi message à l'appui de la touche Enter
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       sendMessage()
     }
@@ -192,8 +198,10 @@ export const ChatArea = () => {
       {/* Messages */}
       <div ref={chatWindow} className="flex-1 max-h-screen overflow-y-auto space-y-4 p-2 rounded-md">
         {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.from === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`p-3 rounded-lg max-w-xs ${msg.from === "user" ? "bg-red-500/60 text-white" : "bg-gray-700 text-white"}`}>
+          <div key={i} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div
+              className={`p-3 rounded-md max-w-lg ${msg.from === 'user' ? 'bg-red-500/60 text-white' : 'text-white'}`}
+            >
               {msg.text}
             </div>
           </div>
@@ -201,9 +209,7 @@ export const ChatArea = () => {
         {isProcessing && (
           <div className="flex justify-start text-gray-400 italic">AI is typing...</div>
         )}
-        {error && (
-          <div className="text-red-400 font-semibold">Error: {error}</div>
-        )}
+        {error && <div className="text-red-400 font-semibold">Error: {error}</div>}
       </div>
 
       {/* Input & Settings */}
