@@ -4,9 +4,9 @@
 import { ChevronDown, Info, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { BsPlusCircle } from 'react-icons/bs'
+import ReactMarkdown from 'react-markdown'
 import { useChatStore, useConversationStore, useMessageStore } from '../store'
 import { useCurrentUser } from '../store/userStore'
-
 import models from '../utils/models'
 
 export const ChatArea = () => {
@@ -15,7 +15,7 @@ export const ChatArea = () => {
   const [inputMessage, setInputMessage] = useState("")
   const [messages, setMessages] = useState<{id:string, from: "user" | "assistant"; text: string }[]>([])
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
-
+  const [isWriting, setIsWriting] = useState(false)
 
 
   // Store states & actions
@@ -94,6 +94,7 @@ export const ChatArea = () => {
 
   // 2. Met à jour le state local messages quand msgs du store change
   useEffect(() => {
+    // fetchMessages(currentConversation?.id || '')
     setMessages(
       msgs.map((msg) => ({
         id: msg.id,
@@ -105,52 +106,87 @@ export const ChatArea = () => {
 
   const togglePopup = () => setIsPopupVisible(!isPopupVisible)
 
-  // Envoi message au backend via le store
+  
+  // Version alternative avec Promise pour un meilleur contrôle
+  const simulateWordByWordStreaming = (fullText: string, messageId: string, delay = 100): Promise<void> => {
+    
+    return new Promise((resolve) => {
+      const words = fullText.split(' ');
+      let wordIndex = 0;
+  
+      const interval = setInterval(() => {
+        wordIndex++;
+        const currentText = words.slice(0, wordIndex).join(' ');
+  
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId
+              ? { ...msg, text: currentText }
+              : msg
+          )
+        );
+  
+        if (wordIndex >= words.length) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, delay);
+      
+    });
+    
+  };
+  
+  // Fonction sendMessage corrigée
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
     clearError();
   
     const userMessage = inputMessage.trim();
     const tmpId = Date.now().toString() + Math.random().toString(36).substring(2, 15);
-    setMessages((prev) => [...prev, { id: tmpId, from: 'user', text: userMessage }]);
-    setInputMessage('');
-  
+    const tmpAssistantId = tmpId + '_assistant';
+    setMessages((prev) => [
+      ...prev, 
+      { id: tmpId, from: 'user', text: userMessage }, 
+      { id: tmpAssistantId, from: 'assistant', text: '' }
+    ]);
+    setInputMessage(''); 
     try {
       let conv = currentConversation;
-  
-      // Créer une nouvelle conversation si aucune n'existe
       if (!conv) {
         conv = await createConversation(user.id, 'New Chat');
       }
-  
       const reply = await handleChatMessage(conv?.id, userMessage);
-      console.log('reply', reply);
-  
-      // Ajouter la réponse de l'assistant
-      setMessages((prev) => [...prev, { id: reply.assistantMsgId, from: 'assistant', text: reply.content }]);
+      setIsWriting(true);
+      await simulateWordByWordStreaming(reply.content, tmpAssistantId);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === tmpId ? { ...msg, id: reply.userMsgId } :
+          msg.id === tmpAssistantId ? { ...msg, id: reply.assistantMsgId, text: reply.content } : msg
+        )
+      );
   
       // Met à jour le titre si c'est toujours "New Chat"
       if (!conv.title || conv.title === 'New Chat') {
         await updateConversation(conv?.id, { title: reply.content.slice(0, 50) });
       }
   
-      // Remplace l'ID temporaire du message utilisateur par le vrai ID
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === tmpId ? { ...msg, id: reply.userMsgId } : msg
-        )
-      );
     } catch (err) {
-      console.error(err); // handled elsewhere
+      console.error(err);
+      // En cas d'erreur, supprimer le message assistant vide
+      setMessages((prev) => prev.filter(msg => msg.id !== tmpAssistantId));
     } finally {
-      // Remet le focus sur l’input
+
+      // Remet le focus sur l'input
       inputRef.current?.focus();
   
       // Scroll automatique en bas
-      chatWindow.current?.scrollTo({
-        top: chatWindow.current.scrollHeight,
-        behavior: 'smooth',
-      });
+      setTimeout(() => {
+        chatWindow.current?.scrollTo({
+          top: chatWindow.current.scrollHeight,
+          behavior: 'smooth',
+        });
+      }, 100);
+      setIsWriting(false);
     }
   };
   
@@ -169,9 +205,6 @@ export const ChatArea = () => {
   }, [messages])
 
   const updateSystemInstructions = (instructions: string) => {
-    if (currentConversation) {
-      updateConversation(currentConversation?.id, { instruction: instructions })
-    }
     setSystemInstructions(instructions)
     updateChatConfig({ ...chatConfig, systemInstructions: instructions })
   }
@@ -203,14 +236,14 @@ export const ChatArea = () => {
   return (
     <section className="flex-1 flex flex-col max-h-[95vh] p-4 overflow-hidden transition-all duration-[850ms] ease-in-out">
       {/* Messages */}
-    <div ref={chatWindow} className="flex-1 max-h-screen overflow-y-auto space-y-4 p-2 rounded-md">
+    <div ref={chatWindow} className="flex-1 max-h-screen overflow-y-auto overflow-x-hidden space-y-4 p-2 rounded-md">
       {messages.map((msg, i) => (
         <div key={i} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
-          <div className="relative group">
+          <div className="relative group ">
             <div
-              className={`p-2 rounded-md max-w-lg ${msg.from === 'user' ? 'bg-white/5 text-white' : 'bg-white/10 text-white'}`}
+              className={`p-2 rounded-md max-w-[50vw] text-xs md:text-sm break-words whitespace-pre-wrap overflow-hidden ${msg.from === 'user' ? 'bg-white/5 text-white' : 'bg-white/10 text-white'}`}
             >
-              {msg.text}
+              <ReactMarkdown>{msg.text}</ReactMarkdown>   
             </div>
             
             {/* Icônes qui apparaissent au hover */}
@@ -238,7 +271,7 @@ export const ChatArea = () => {
               
               {/* Delete */}
               <button
-                onClick={() => {deleteMessage(msg.id)}}
+                onClick={() => {deleteMessage(msg.id);fetchMessages(currentConversation?.id || '')}}
                 className="p-1 hover:bg-gray-700 rounded text-gray-300 hover:text-red-400 transition-colors"
                 title="Supprimer"
               >
@@ -264,9 +297,9 @@ export const ChatArea = () => {
           </div>
         </div>
       ))}
-      {isProcessing && (
+      {/* {isProcessing && (
         <div className="flex justify-start text-gray-400 italic">AI is typing...</div>
-      )}
+      )} */}
       {error && <div className="text-red-400 font-semibold">Error: {error}</div>}
     </div>
 
@@ -317,6 +350,11 @@ export const ChatArea = () => {
                     <textarea
                       value={systemInstructions}
                       onChange={(e) => updateSystemInstructions(e.target.value)}
+                      onBlur={(e) => {
+                        if (currentConversation) {
+                          updateConversation(currentConversation.id, { instruction: e.target.value });
+                        }
+                      }}
                       placeholder="Pass additional instructions to the AI, for example to change the tone or format output"
                       className="w-full p-2 border border-gray-300 rounded-md text-gray-900 text-xs resize-none h-20"
                     />
@@ -356,7 +394,7 @@ export const ChatArea = () => {
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            disabled={isProcessing}
+            disabled={isProcessing || isWriting}
           />
         </div>
 

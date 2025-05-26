@@ -39,6 +39,7 @@
     "lucide-react": "^0.511.0",
     "node-fetch": "^3.3.2",
     "prisma": "^6.8.2",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.6.0",
     "zustand": "^5.0.5"
   },

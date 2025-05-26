@@ -47,14 +47,6 @@ const toolFunctions = {
   get_weather: tools.weatherTool,
 };
 
-function getBaseURLFromModelName(modelName) {
-  const model = modelList.find(m => m.name === modelName);
-  return model ? model.baseURL : null;
-}
-function getProviderFromModelName(modelName) {
-  const model = modelList.find(m => m.name === modelName);
-  return model ? model.baseURL : null;
-}
 
 async function handleChatMessage(conversationId, userMessage, options = {}) {
   try {
@@ -93,8 +85,8 @@ async function handleChatMessage(conversationId, userMessage, options = {}) {
     const completion = await openaiClient.createChatCompletion(messagesForOpenAI, {
       temperature: options.temperature ?? 0.7,
       max_tokens: options.max_tokens ?? 1000,
-      tools: availableTools,
-      tool_choice: "auto" // L'IA décide si elle a besoin d'outils
+      // tools: availableTools,
+      // tool_choice: "auto" 
     });
     console.log('assistantMessage:', completion.choices);
     const assistantMessage = completion.choices[0].message;

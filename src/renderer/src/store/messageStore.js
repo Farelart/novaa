@@ -61,7 +61,6 @@ const useMessageStore = create(
             method: 'DELETE',
           });
           if (!response.ok) throw new Error('Failed to delete message');
-          
           set((state) => ({
             messages: state.messages.filter((msg) => msg.id !== id),
             loading: false,
