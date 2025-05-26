@@ -64,10 +64,7 @@ async function handleChatMessage(conversationId, userMessage, options = {}) {
       where: { conversationId },
       orderBy: { createdAt: 'asc' },
     });
-
     
-
-
     // 2. Préparer les messages pour OpenAI
     const messagesForOpenAI = [];
 
@@ -104,7 +101,7 @@ async function handleChatMessage(conversationId, userMessage, options = {}) {
     
 
     // 4. Sauvegarder le message utilisateur
-    await prisma.message.create({
+    const userMsg = await prisma.message.create({
       data: { 
         conversationId, 
         role: 'user', 
@@ -115,14 +112,14 @@ async function handleChatMessage(conversationId, userMessage, options = {}) {
     // 5. Traiter les appels d'outils si nécessaire
     if (assistantMessage.tool_calls) {
       // Sauvegarder le message assistant avec tool_calls
-      await prisma.message.create({
-        data: {
-          conversationId,
-          role: 'assistant',
-          content: assistantMessage.content || '',
-          toolCall: JSON.stringify(assistantMessage.tool_calls)
-        },
-      });
+      // await prisma.message.create({
+      //   data: {
+      //     conversationId,
+      //     role: 'assistant',
+      //     content: assistantMessage.content || '',
+      //     toolCall: JSON.stringify(assistantMessage.tool_calls)
+      //   },
+      // });
 
       // Exécuter chaque outil appelé
       const toolResults = [];
@@ -162,7 +159,7 @@ async function handleChatMessage(conversationId, userMessage, options = {}) {
         const finalAssistantMessage = finalCompletion.choices[0].message.content;
 
         // Sauvegarder la réponse finale
-        await prisma.message.create({
+        const assistantMsg=await prisma.message.create({
           data: {
             conversationId,
             role: 'assistant',
@@ -170,12 +167,12 @@ async function handleChatMessage(conversationId, userMessage, options = {}) {
           },
         });
 
-        return finalAssistantMessage;
+        return {content:finalAssistantMessage, userMsgId: userMsg.id, assistantMsgId: assistantMsg.id};
       }
     }
 
     // 6. Pas d'outils nécessaires, sauvegarder la réponse directe
-    await prisma.message.create({
+    const assistantMsg = await prisma.message.create({
       data: {
         conversationId,
         role: 'assistant',
@@ -183,7 +180,7 @@ async function handleChatMessage(conversationId, userMessage, options = {}) {
       },
     });
 
-    return assistantMessage.content;
+    return {content:assistantMessage.content, userMsgId: userMsg.id, assistantMsgId: assistantMsg.id};
 
   } catch (error) {
     console.error('Erreur dans handleChatMessage:', error);

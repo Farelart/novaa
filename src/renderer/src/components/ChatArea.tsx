@@ -13,8 +13,8 @@ export const ChatArea = () => {
   // Local states
   const [isPopupVisible, setIsPopupVisible] = useState(false)
   const [inputMessage, setInputMessage] = useState("")
-  const [messages, setMessages] = useState<{ from: "user" | "assistant"; text: string }[]>([])
-
+  const [messages, setMessages] = useState<{id:string, from: "user" | "assistant"; text: string }[]>([])
+  const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
 
 
   // Store states & actions
@@ -32,7 +32,7 @@ export const ChatArea = () => {
     getRemainingUsage,
   } = useCurrentUser();
 
-  const { fetchMessages, messages: msgs } = useMessageStore()
+  const { fetchMessages, messages: msgs, deleteMessage } = useMessageStore()
 
   const { currentConversation, createConversation, setCurrentConversation, updateConversation,fetchConversations } = useConversationStore()
 
@@ -88,6 +88,7 @@ export const ChatArea = () => {
   useEffect(() => {
     setMessages(
       msgs.map((msg) => ({
+        id: msg.id,
         from: msg.role === "user" ? "user" : "assistant",
         text: msg.content || "",
       }))
@@ -99,54 +100,56 @@ export const ChatArea = () => {
 
   const togglePopup = () => setIsPopupVisible(!isPopupVisible)
 
-
+  
   // Envoi message au backend via le store
   const sendMessage = async () => {
-    if (!inputMessage.trim()) return
-    clearError()
-
-    const userMessage = inputMessage.trim()
-    setMessages((prev) => [...prev, { from: 'user', text: userMessage }])
-    setInputMessage('')
-
+    if (!inputMessage.trim()) return;
+    clearError();
+  
+    const userMessage = inputMessage.trim();
+    const tmpId = Date.now().toString() + Math.random().toString(36).substring(2, 15);
+    setMessages((prev) => [...prev, { id: tmpId, from: 'user', text: userMessage }]);
+    setInputMessage('');
+  
     try {
-      if (!currentConversation) {
-        const conv=await createConversation(user.id, 'New Chat')
-        const reply = await handleChatMessage(conv?.id, userMessage)
-        setMessages((prev) => [...prev, { from: "assistant", text: reply }])
-        if( conv.title === 'New Chat' || !conv.title){
-          await updateConversation(conv?.id,{title: reply.slice(0, 50)})
-        }
-        
+      let conv = currentConversation;
+  
+      // Créer une nouvelle conversation si aucune n'existe
+      if (!conv) {
+        conv = await createConversation(user.id, 'New Chat');
       }
-      else{
-        const reply = await handleChatMessage(currentConversation?.id, userMessage)
-        setMessages((prev) => [...prev, { from: "assistant", text: reply }])
-        if( currentConversation.title === 'New Chat' || !currentConversation.title){
-          await updateConversation(currentConversation?.id,{title: reply.slice(0, 50)})
-        }
+  
+      const reply = await handleChatMessage(conv?.id, userMessage);
+      console.log('reply', reply);
+  
+      // Ajouter la réponse de l'assistant
+      setMessages((prev) => [...prev, { id: reply.assistantMsgId, from: 'assistant', text: reply.content }]);
+  
+      // Met à jour le titre si c'est toujours "New Chat"
+      if (!conv.title || conv.title === 'New Chat') {
+        await updateConversation(conv?.id, { title: reply.content.slice(0, 50) });
       }
-      
+  
+      // Remplace l'ID temporaire du message utilisateur par le vrai ID
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === tmpId ? { ...msg, id: reply.userMsgId } : msg
+        )
+      );
     } catch (err) {
-      // erreur gérée par le store (error)
-      console.error(err)
+      console.error(err); // handled elsewhere
     } finally {
-      // Réinitialise le focus sur l'input après l'envoi
-      if (inputRef.current) {
-        inputRef.current.focus()
-      }
-      // Scroll vers le bas de la fenêtre de chat
-      if (chatWindow.current) {
-        chatWindow.current.scrollTo({
-          top: chatWindow.current.scrollHeight,
-          behavior: "smooth",
-        });
-      }
+      // Remet le focus sur l’input
+      inputRef.current?.focus();
+  
+      // Scroll automatique en bas
+      chatWindow.current?.scrollTo({
+        top: chatWindow.current.scrollHeight,
+        behavior: 'smooth',
+      });
     }
-
-    
-  }
-
+  };
+  
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (chatWindow.current) {
@@ -196,21 +199,72 @@ export const ChatArea = () => {
   return (
     <section className="flex-1 flex flex-col max-h-[95vh] p-4 overflow-hidden transition-all duration-[850ms] ease-in-out">
       {/* Messages */}
-      <div ref={chatWindow} className="flex-1 max-h-screen overflow-y-auto space-y-4 p-2 rounded-md">
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
+    <div ref={chatWindow} className="flex-1 max-h-screen overflow-y-auto space-y-4 p-2 rounded-md">
+      {messages.map((msg, i) => (
+        <div key={i} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <div className="relative group">
             <div
-              className={`p-3 rounded-md max-w-lg ${msg.from === 'user' ? 'bg-red-500/60 text-white' : 'text-white'}`}
+              className={`p-2 rounded-md max-w-lg ${msg.from === 'user' ? 'bg-red-500/60 text-white' : 'text-white'}`}
             >
               {msg.text}
             </div>
+            
+            {/* Icônes qui apparaissent au hover */}
+            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex space-x-2 bg-gray-800 rounded-md p-1 shadow-lg">
+              {/* Copy */}
+              <button
+                onClick={async () => {
+                  await navigator.clipboard.writeText(msg.text);
+                  setCopiedMessageId(i);
+                  setTimeout(() => setCopiedMessageId(null), 2000);
+                }}
+                className="p-1 hover:bg-gray-700 rounded text-gray-300 hover:text-white transition-colors relative"
+                title="Copier"
+              >
+                {copiedMessageId === i ? (
+                  <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                )}
+              </button>
+              
+              {/* Delete */}
+              <button
+                onClick={() => {deleteMessage(msg.id)}}
+                className="p-1 hover:bg-gray-700 rounded text-gray-300 hover:text-red-400 transition-colors"
+                title="Supprimer"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>          
+              {/* Regenerate (seulement pour les messages de l'IA) */}
+                {/* {msg.from !== 'user' && i === messages.length - 1 && (
+                <button
+                  onClick={() => {
+                  // Your regeneration logic here
+                  }}
+                  className="p-1 hover:bg-gray-700 rounded text-gray-300 hover:text-blue-400 transition-colors"
+                  title="Régénérer"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+                )} */}
+            </div>
           </div>
-        ))}
-        {isProcessing && (
-          <div className="flex justify-start text-gray-400 italic">AI is typing...</div>
-        )}
-        {error && <div className="text-red-400 font-semibold">Error: {error}</div>}
-      </div>
+        </div>
+      ))}
+      {isProcessing && (
+        <div className="flex justify-start text-gray-400 italic">AI is typing...</div>
+      )}
+      {error && <div className="text-red-400 font-semibold">Error: {error}</div>}
+    </div>
 
       {/* Input & Settings */}
       <div className="mt-4 relative">
@@ -312,7 +366,7 @@ export const ChatArea = () => {
         </div>
 
         {/* Model name display */}
-        <div className="mt-2 px-3">
+        <div className="mt-2 px-3 hover:cursor-pointer"  onClick={togglePopup}>
           <span className="text-xs text-white">Using model: {selectedModel}</span>
         </div>
       </div>
