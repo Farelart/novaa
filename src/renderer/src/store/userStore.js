@@ -1,180 +1,165 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import api from '../lib/axios'; // ← import de l'axios configuré
 
-export const useUserStore = create(
+const API_BASE_URL = 'http://localhost:3001/api'; // change ça selon ton backend
+
+const useUserStore = create(
   devtools(
     (set, get) => ({
-      // State
       user: null,
-      users: [], // Pour stocker la liste des utilisateurs
+      users: [],
       loading: false,
       error: null,
 
-      // Actions
       setLoading: (loading) => set({ loading }),
       setError: (error) => set({ error }),
       clearError: () => set({ error: null }),
 
-      // Fetch single user by ID
-      fetchUser: async (userId=1) => {
+      fetchUser: async (userId = 1) => {
         set({ loading: true, error: null });
         try {
-          const response = await api.get(`/users/${userId}`);
-          set({ user: response.data, loading: false });
-          return response.data;
+          const res = await fetch(`http://localhost:3001/api/users/${userId}`);
+          if (!res.ok) throw await res.json();
+          const data = await res.json();
+          set({ user: data, loading: false });
+          return data;
         } catch (err) {
-          const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Erreur inconnue';
+          const errorMessage = err.error || err.message || 'Erreur inconnue';
           set({ error: errorMessage, loading: false });
           throw err;
         }
       },
 
-      // Fetch all users
       fetchUsers: async () => {
         set({ loading: true, error: null });
         try {
-          const response = await api.get('/users');
-          set({ users: response.data, loading: false });
-          return response.data;
+          const res = await fetch(`http://localhost:3001/api/users`);
+          if (!res.ok) throw await res.json();
+          const data = await res.json();
+          set({ users: data, loading: false });
+          return data;
         } catch (err) {
-          const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Erreur inconnue';
+          const errorMessage = err.error || err.message || 'Erreur inconnue';
           set({ error: errorMessage, loading: false });
           throw err;
         }
       },
 
-      // Create new user
       createUser: async (userData) => {
         set({ loading: true, error: null });
         try {
-          const response = await api.post('/users', userData);
-          const newUser = response.data;
-          
+          const res = await fetch(`http://localhost:3001/api/users`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData),
+          });
+          if (!res.ok) throw await res.json();
+          const newUser = await res.json();
           set((state) => ({
             users: [...state.users, newUser],
-            user: newUser, // Set as current user if needed
+            user: newUser,
             loading: false,
           }));
-          
           return newUser;
         } catch (err) {
-          const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Erreur lors de la création';
+          const errorMessage = err.error || err.message || 'Erreur lors de la création';
           set({ error: errorMessage, loading: false });
           throw err;
         }
       },
 
-      // Update user
-      updateUser: async (userId=1, updateData) => {
+      updateUser: async (userId = 1, updateData) => {
         set({ loading: true, error: null });
         try {
-          const response = await api.put(`/users/${userId}`, updateData);
-          const updatedUser = response.data;
-          
+          const res = await fetch(`http://localhost:3001/api/users/${userId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData),
+          });
+          if (!res.ok) throw await res.json();
+          const updatedUser = await res.json();
           set((state) => ({
-            users: state.users.map(user => 
+            users: state.users.map((user) =>
               user.id === userId ? updatedUser : user
             ),
             user: state.user?.id === userId ? updatedUser : state.user,
             loading: false,
           }));
-          
           return updatedUser;
         } catch (err) {
-          const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Erreur lors de la mise à jour';
+          const errorMessage = err.error || err.message || 'Erreur lors de la mise à jour';
           set({ error: errorMessage, loading: false });
           throw err;
         }
       },
 
-      // Delete user
-      deleteUser: async (userId=1) => {
+      deleteUser: async (userId = 1) => {
         set({ loading: true, error: null });
         try {
-          await api.delete(`/users/${userId}`);
-          
+          const res = await fetch(`http://localhost:3001/api/users/${userId}`, {
+            method: 'DELETE',
+          });
+          if (!res.ok) throw await res.json();
           set((state) => ({
-            users: state.users.filter(user => user.id !== userId),
+            users: state.users.filter((user) => user.id !== userId),
             user: state.user?.id === userId ? null : state.user,
             loading: false,
           }));
-          
           return true;
         } catch (err) {
-          const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Erreur lors de la suppression';
+          const errorMessage = err.error || err.message || 'Erreur lors de la suppression';
           set({ error: errorMessage, loading: false });
           throw err;
         }
       },
 
-      // Update user profile (partial update for current user)
       updateProfile: async (updateData) => {
         const { user } = get();
         if (!user) {
           set({ error: 'Aucun utilisateur connecté' });
           return;
         }
-        
         return get().updateUser(user.id, updateData);
       },
 
-      // Update user preferences (hotkey, appearance, defaultModel)
       updatePreferences: async (preferences) => {
         const { user } = get();
         if (!user) {
           set({ error: 'Aucun utilisateur connecté' });
           return;
         }
-
         const validPreferences = {};
         if (preferences.hotkey !== undefined) validPreferences.hotkey = preferences.hotkey;
         if (preferences.appearance !== undefined) validPreferences.appearance = preferences.appearance;
         if (preferences.defaultModel !== undefined) validPreferences.defaultModel = preferences.defaultModel;
-
         return get().updateUser(user.id, validPreferences);
       },
 
-      // Update user plan
       updateUserPlan: async (planId) => {
         const { user } = get();
         if (!user) {
           set({ error: 'Aucun utilisateur connecté' });
           return;
         }
-
         return get().updateUser(user.id, { planId });
       },
 
-      // Clear current user
       clearUser: () => set({ user: null }),
-
-      // Clear all users
       clearUsers: () => set({ users: [] }),
-
-      // Set current user (for login/auth)
       setCurrentUser: (user) => set({ user }),
-
-      // Get user by ID from store (without API call)
       getUserById: (userId) => {
         const { users } = get();
-        return users.find(user => user.id === userId) || null;
+        return users.find((user) => user.id === userId) || null;
       },
-
-      // Check if user has specific plan
       hasFreePlan: () => {
         const { user } = get();
         return user?.plan?.name === 'Free';
       },
-
-      // Check usage limit
       isUsageLimitReached: () => {
         const { user } = get();
         if (!user?.plan) return false;
         return user.plan.used_limit >= user.plan.limit;
       },
-
-      // Get remaining usage
       getRemainingUsage: () => {
         const { user } = get();
         if (!user?.plan) return 0;
@@ -184,6 +169,7 @@ export const useUserStore = create(
     { name: 'user-store' }
   )
 );
+
 
 // Hook personnalisé pour utiliser le store utilisateur avec des fonctions utilitaires
 export const useCurrentUser = () => {
