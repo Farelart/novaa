@@ -46,9 +46,7 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
     if (userId) {
       fetchUser()
       fetchConversations(userId)
-      // if(conversations.length === 0) {
-      //   createConversation(userId, 'New Chat')
-      // }
+      
     }
   }, [userId, fetchConversations])
 

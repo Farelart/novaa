@@ -1,13 +1,13 @@
 /* eslint-disable prettier/prettier */
 'use client'
 
-import { ChevronDown, Info, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { useChatStore, useConversationStore, useMessageStore } from "../store";
-import { useCurrentUser } from '../store/userStore';
+import { ChevronDown, Info, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { BsPlusCircle } from 'react-icons/bs'
+import { useChatStore, useConversationStore, useMessageStore } from '../store'
+import { useCurrentUser } from '../store/userStore'
 
-
-import models from '../utils/models';
+import models from '../utils/models'
 
 export const ChatArea = () => {
   // Local states
@@ -15,6 +15,7 @@ export const ChatArea = () => {
   const [inputMessage, setInputMessage] = useState("")
   const [messages, setMessages] = useState<{id:string, from: "user" | "assistant"; text: string }[]>([])
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
+
 
 
   // Store states & actions
@@ -29,28 +30,34 @@ export const ChatArea = () => {
     updateProfile,
     updatePreferences,
     hasFreePlan,
-    getRemainingUsage,
-  } = useCurrentUser();
+    getRemainingUsage
+  } = useCurrentUser()
 
   const { fetchMessages, messages: msgs, deleteMessage } = useMessageStore()
 
-  const { currentConversation, createConversation, setCurrentConversation, updateConversation,fetchConversations } = useConversationStore()
+  const {
+    currentConversation,
+    createConversation,
+    setCurrentConversation,
+    updateConversation,
+    fetchConversations
+  } = useConversationStore()
 
   // Local config states
   const [selectedModel, setSelectedModel] = useState(chatConfig.model)
-  const [creativity, setCreativity] = useState("Medium")
-  const [systemInstructions, setSystemInstructions] = useState("")
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [creativity, setCreativity] = useState('Medium')
+  const [systemInstructions, setSystemInstructions] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
   const chatWindow = useRef<HTMLDivElement>(null)
-  const prevConversationId = useRef<string | null>(null);
+  const prevConversationId = useRef<string | null>(null)
 
   // Sync local config with store
   useEffect(() => {
     fetchUser()
     updateChatConfig({
       model: currentConversation?.instruction || selectedModel,
-      temperature: creativity === "Low" ? 0.3 : creativity === "Medium" ? 0.7 : 1,
-      instruction: currentConversation?.instruction || systemInstructions,
+      temperature: creativity === 'Low' ? 0.3 : creativity === 'Medium' ? 0.7 : 1,
+      instruction: currentConversation?.instruction || systemInstructions
     })
     // if (inputRef.current) {
     //   inputRef.current.focus();
@@ -62,28 +69,29 @@ export const ChatArea = () => {
   //     inputRef.current.focus();
   //   }
   // })
-  
 
   useEffect(() => {
-    if (
-      inputRef.current &&
-      currentConversation?.id !== prevConversationId.current
-    ) {
-      inputRef.current.focus();
-      prevConversationId.current = currentConversation?.id ?? null;
+    if (inputRef.current && currentConversation?.id !== prevConversationId.current) {
+      inputRef.current.focus()
+      prevConversationId.current = currentConversation?.id ?? null
     }
-    setSystemInstructions(currentConversation?.instruction || "")
-    setSelectedModel(currentConversation?.model || user?.defaultModel || "gemini-2.0-flash")
-    setCreativity(currentConversation?.temperature === 0.3 ? "Low" : currentConversation?.temperature === 0.7 ? "Medium" : "High")
+    setSystemInstructions(currentConversation?.instruction || '')
+    setSelectedModel(currentConversation?.model || user?.defaultModel || 'gemini-2.0-flash')
+    setCreativity(
+      currentConversation?.temperature === 0.3
+        ? 'Low'
+        : currentConversation?.temperature === 0.7
+          ? 'Medium'
+          : 'High'
+    )
 
     updateChatConfig({
       model: currentConversation?.model || user?.defaultModel,
       temperature: currentConversation?.temperature || 0.7,
-      instruction: currentConversation?.instruction || "",
+      instruction: currentConversation?.instruction || ''
     })
+  }, [currentConversation])
 
-  }, [currentConversation]);
-  
   // 2. Met à jour le state local messages quand msgs du store change
   useEffect(() => {
     setMessages(
@@ -94,13 +102,9 @@ export const ChatArea = () => {
       }))
     )
   }, [msgs])
-  
-
-
 
   const togglePopup = () => setIsPopupVisible(!isPopupVisible)
 
-  
   // Envoi message au backend via le store
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -150,21 +154,21 @@ export const ChatArea = () => {
     }
   };
   
+
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (chatWindow.current) {
         chatWindow.current.scrollTo({
           top: chatWindow.current.scrollHeight,
-          behavior: "smooth",
-        });
+          behavior: 'smooth'
+        })
       }
-    }, 50); // ou même 0 si ça marche bien
-  
-    return () => clearTimeout(timeout);
-  }, [messages]);
-  
+    }, 50) // ou même 0 si ça marche bien
+
+    return () => clearTimeout(timeout)
+  }, [messages])
+
   const updateSystemInstructions = (instructions: string) => {
-    
     if (currentConversation) {
       updateConversation(currentConversation?.id, { instruction: instructions })
     }
@@ -180,7 +184,7 @@ export const ChatArea = () => {
     updateChatConfig({ ...chatConfig, model })
   }
   const updateCreativity = (level: string) => {
-    const temperature = level === "Low" ? 0.3 : level === "Medium" ? 0.7 : 1
+    const temperature = level === 'Low' ? 0.3 : level === 'Medium' ? 0.7 : 1
     if (currentConversation) {
       updateConversation(currentConversation?.id, { temperature })
     }
@@ -204,7 +208,7 @@ export const ChatArea = () => {
         <div key={i} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
           <div className="relative group">
             <div
-              className={`p-2 rounded-md max-w-lg ${msg.from === 'user' ? 'bg-red-500/60 text-white' : 'text-white'}`}
+              className={`p-2 rounded-md max-w-lg ${msg.from === 'user' ? 'bg-white/5 text-white' : 'bg-white/10 text-white'}`}
             >
               {msg.text}
             </div>
@@ -274,16 +278,7 @@ export const ChatArea = () => {
               onClick={togglePopup}
               className="p-2 text-gray-400 hover:text-white focus:outline-none transition-colors"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-6 h-6"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
+              <BsPlusCircle className="w-5 h-5" />
             </button>
 
             {/* Popup Settings */}
@@ -354,7 +349,7 @@ export const ChatArea = () => {
           </div>
 
           <input
-          ref={inputRef}
+            ref={inputRef}
             type="text"
             placeholder="Type a message..."
             className="flex-1 p-3 bg-transparent text-white placeholder-gray-400 focus:outline-none rounded-md border border-transparent"

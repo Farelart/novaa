@@ -43,7 +43,7 @@ function createWindow(): void {
   mainWindow = new BrowserWindow({
     title: 'novaa',
     width: 700,
-    height: 1000,
+    height: 700,
     show: false,
     autoHideMenuBar: true,
     transparent: true,
