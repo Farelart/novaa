@@ -15,7 +15,7 @@ const App = () => {
         <Route path="/" element={<Chat />} />
         <Route path="/settings" element={<Settings />}>
           {/* Default route for settings */}
-          <Route index element={<Navigate to="ai" replace />} />
+          <Route index element={<Navigate to="general" replace />} />
           <Route path="general" element={<GeneralSettings />} />
           <Route path="extensions" element={<ExtensionsSettings />} />
           <Route path="ai" element={<AISettings />} />

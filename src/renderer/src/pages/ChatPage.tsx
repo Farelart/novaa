@@ -7,9 +7,7 @@ import { Sidebar } from '../components/Sidebar'
 import { useConversationStore } from '../store'
 const Chat = () => {
   const [isSidebarVisible, setIsSidebarVisible] = useState(true)
-  const { currentConversation } = useConversationStore();
-  
-
+  const { currentConversation } = useConversationStore()
 
   const handleToggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible)
