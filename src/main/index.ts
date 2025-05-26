@@ -2,6 +2,7 @@
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import { ChildProcess, fork } from 'child_process'
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import http from 'http'
 import { join } from 'path'
 import icon from '../../resources/icon.png?asset'
 
@@ -10,6 +11,34 @@ let serverProcess: ChildProcess | null = null
 let mainWindow: BrowserWindow | null = null
 
 let settingsWindow: BrowserWindow | null = null
+
+
+function waitForServerReady(url: string, timeout = 10000, interval = 500): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const start = Date.now()
+
+    const check = () => {
+      http.get(url, (res) => {
+        if (res.statusCode && res.statusCode < 500) {
+          console.log('✅ Serveur est prêt')
+          resolve()
+        } else {
+          retry()
+        }
+      }).on('error', retry)
+    }
+
+    const retry = () => {
+      if (Date.now() - start > timeout) {
+        reject(new Error('⛔ Timeout : serveur non prêt'))
+      } else {
+        setTimeout(check, interval)
+      }
+    }
+
+    check()
+  })
+}
 
 function startServer(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -32,10 +61,9 @@ function startServer(): Promise<void> {
     })
 
     // attendre un peu pour que le serveur écoute réellement
-    setTimeout(() => {
-      console.log('✅ Serveur démarré')
-      resolve()
-    }, 1000) // ou plus si ton serveur met du temps à démarrer
+    waitForServerReady('http://localhost:3001')
+      .then(resolve)
+      .catch(reject)
   })
 }
 

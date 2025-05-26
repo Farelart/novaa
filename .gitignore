@@ -5,3 +5,6 @@ out
 *.log*
 
 /src/generated/prisma
+afaire.txt
+./afaire.txt
+/afaire.txt
