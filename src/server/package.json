@@ -1,29 +1,29 @@
 {
-    "name": "novaa-server",
-    "version": "1.0.0",
-    "main": "index.js",
-    "scripts": {
-        "start": "node index.js",
-        "dev": "npm run populate && nodemon index.js",
-        "populate": "node prisma/seed.js",
-        "generate": "npx prisma generate",
-        "migrate": "npx prisma migrate dev",
-        "reset": "npx prisma migrate reset"
-    },
-    "dependencies": {
-        "@prisma/client": "^6.8.2",
-        "axios": "^1.9.0",
-        "express": "^4.21.2",
-        "mathjs": "^14.5.0",
-        "openai": "^4.103.0",
-        "sqlite3": "^5.1.7"
-    },
-    "devDependencies": {
-        "nodemon": "^2.0.22",
-        "prisma": "^6.8.2"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "description": ""
+  "name": "novaa-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "npm run populate && nodemon index.js",
+    "populate": "node prisma/seed.js",
+    "generate": "npx prisma generate",
+    "migrate": "npx prisma migrate dev",
+    "reset": "npx prisma migrate reset"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.8.2",
+    "axios": "^1.9.0",
+    "express": "^4.21.2",
+    "mathjs": "^14.5.0",
+    "openai": "^4.103.0",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22",
+    "prisma": "^6.8.2"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
 }
