@@ -12,20 +12,21 @@ let mainWindow: BrowserWindow | null = null
 
 let settingsWindow: BrowserWindow | null = null
 
-
-function waitForServerReady(url: string, timeout = 10000, interval = 500): Promise<void> {
+function waitForServerReady(url: string, timeout = 50000, interval = 500): Promise<void> {
   return new Promise((resolve, reject) => {
     const start = Date.now()
 
     const check = () => {
-      http.get(url, (res) => {
-        if (res.statusCode && res.statusCode < 500) {
-          console.log('✅ Serveur est prêt')
-          resolve()
-        } else {
-          retry()
-        }
-      }).on('error', retry)
+      http
+        .get(url, (res) => {
+          if (res.statusCode && res.statusCode < 500) {
+            console.log('✅ Serveur est prêt')
+            resolve()
+          } else {
+            retry()
+          }
+        })
+        .on('error', retry)
     }
 
     const retry = () => {
@@ -61,9 +62,7 @@ function startServer(): Promise<void> {
     })
 
     // attendre un peu pour que le serveur écoute réellement
-    waitForServerReady('http://localhost:3001')
-      .then(resolve)
-      .catch(reject)
+    waitForServerReady('http://localhost:3001').then(resolve).catch(reject)
   })
 }
 
