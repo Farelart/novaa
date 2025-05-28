@@ -120,20 +120,20 @@ export const ChatArea = () => {
       let intervalId: NodeJS.Timeout | null = null
       let fallbackTimeoutId: NodeJS.Timeout | null = null
       let isActive = !document.hidden
-      
+
       const updateText = () => {
         wordIndex++
         const currentText = words.slice(0, wordIndex).join(' ')
         setMessages((prev) =>
           prev.map((msg) => (msg.id === messageId ? { ...msg, text: currentText } : msg))
         )
-        
+
         if (wordIndex >= words.length) {
           cleanup()
           resolve()
         }
       }
-      
+
       const showFullText = () => {
         setMessages((prev) =>
           prev.map((msg) => (msg.id === messageId ? { ...msg, text: fullText } : msg))
@@ -141,13 +141,13 @@ export const ChatArea = () => {
         cleanup()
         resolve()
       }
-      
+
       const cleanup = () => {
         if (intervalId) clearInterval(intervalId)
         if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId)
         document.removeEventListener('visibilitychange', handleVisibilityChange)
       }
-      
+
       const handleVisibilityChange = () => {
         if (document.hidden) {
           isActive = false
@@ -168,9 +168,9 @@ export const ChatArea = () => {
           }
         }
       }
-      
+
       document.addEventListener('visibilitychange', handleVisibilityChange)
-      
+
       if (isActive) {
         intervalId = setInterval(updateText, delay)
       } else {
@@ -179,8 +179,6 @@ export const ChatArea = () => {
       }
     })
   }
-  
-  
 
   // Fonction sendMessage corrigée
   const sendMessage = async () => {
@@ -290,7 +288,7 @@ export const ChatArea = () => {
           <div key={i} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className="relative group ">
               <div
-                className={`p-2 rounded-md max-w-[50vw] text-sm break-words whitespace-pre-wrap overflow-hidden ${msg.from === 'user' ? 'bg-white/15 text-white/60' : 'bg-white/25 text-white/80'}`}
+                className={`p-2 rounded-md max-w-[50vw] text-sm break-words whitespace-pre-wrap overflow-hidden ${msg.from === 'user' ? 'bg-white/25 text-white/80' : 'bg-white/25 text-white/80'}`}
               >
                 <ReactMarkdown>{msg.text}</ReactMarkdown>
               </div>

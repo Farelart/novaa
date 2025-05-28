@@ -20,7 +20,7 @@ export const Settings = () => {
 
       <div className="absolute top-8 left-0 right-0 mt-2 flex items-center justify-center space-x-8 px-4">
         <TabButtonLink to="general" icon={<AiOutlineSetting />} label="General" />
-        <TabButtonLink to="extensions" icon={<VscExtensions />} label="Extensions" />
+        <TabButtonLink to="extensions" icon={<VscExtensions />} label="Mates" />
         <TabButtonLink to="ai" icon={<BsRobot />} label="AI" isPro />
         <TabButtonLink to="account" icon={<BsPerson />} label="Account" />
         <TabButtonLink to="about" icon={<FiInfo />} label="About" />
