@@ -1,14 +1,13 @@
 /* eslint-disable prettier/prettier */
-import { useEffect, useMemo, useState } from 'react';
-import { DeleteConfirmationDialog } from '../components/delete-confirmation-dialog';
-import { useConversationStore, useMessageStore } from '../store';
-import { useCurrentUser } from '../store/userStore';
-import { formatRelativeTime } from '../utils/dateFormat';
+import { useEffect, useMemo, useState } from 'react'
+import { DeleteConfirmationDialog } from '../components/delete-confirmation-dialog'
+import { useConversationStore, useMessageStore } from '../store'
+import { useCurrentUser } from '../store/userStore'
+import { formatRelativeTime } from '../utils/dateFormat'
 type SidebarProps = {
   isVisible?: boolean
   userId: number // ID de l'utilisateur connecté
 }
-
 
 export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
   const [searchQuery, setSearchQuery] = useState('')
@@ -24,9 +23,9 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
     updateProfile,
     updatePreferences,
     hasFreePlan,
-    getRemainingUsage,
-  } = useCurrentUser();
-  
+    getRemainingUsage
+  } = useCurrentUser()
+
   // Zustand store hooks
   const {
     conversations,
@@ -46,19 +45,19 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
     if (userId) {
       fetchUser()
       fetchConversations(userId)
-      
     }
   }, [userId, fetchConversations])
 
   // Filter conversations based on search query
   const filteredConversations = useMemo(() => {
     if (!searchQuery.trim()) return conversations
-    
-    return conversations.filter(conversation =>
-      conversation.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      conversation.messages?.some(msg => 
-        msg.content?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+
+    return conversations.filter(
+      (conversation) =>
+        conversation.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        conversation.messages?.some((msg) =>
+          msg.content?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
     )
   }, [conversations, searchQuery])
 
@@ -70,9 +69,9 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
     const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
 
     const groups: {
-      today: typeof conversations,
-      yesterday: typeof conversations,
-      lastWeek: typeof conversations,
+      today: typeof conversations
+      yesterday: typeof conversations
+      lastWeek: typeof conversations
       older: typeof conversations
     } = {
       today: [],
@@ -81,7 +80,7 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
       older: []
     }
 
-    filteredConversations.forEach(conversation => {
+    filteredConversations.forEach((conversation) => {
       const conversationDate = new Date(conversation.createdAt)
       const conversationDateOnly = new Date(
         conversationDate.getFullYear(),
@@ -106,7 +105,7 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
   // Get conversation snippet (first message content or default)
   const getConversationSnippet = (conversation) => {
     if (conversation.messages && conversation.messages.length > 0) {
-      const firstMessage = conversation.messages.find(msg => msg.role === 'user')
+      const firstMessage = conversation.messages.find((msg) => msg.role === 'user')
       return firstMessage?.content?.substring(0, 50) + '...' || 'No messages yet...'
     }
     return 'Ask AI Anything...'
@@ -121,7 +120,6 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
       console.error('Failed to fetch messages for conversation:', error)
     }
   }
-
 
   // Handle creating new conversation
   const handleNewChat = async () => {
@@ -143,7 +141,7 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
       }
       setShowDeleteDialog(false)
     } catch (error) {
-      console.error("Failed to delete conversation:", error)
+      console.error('Failed to delete conversation:', error)
     } finally {
       setIsDeleting(false)
     }
@@ -183,14 +181,21 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
                   {formatRelativeTime(conversation.createdAt)}
                 </p>
               </div>
-              
+
               {/* Delete button - appears on hover */}
               <button
                 onClick={(e) => handleDeleteConversation(e, conversation.id)}
                 className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 p-1 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300"
                 title="Delete conversation"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <polyline points="3,6 5,6 21,6"></polyline>
                   <path d="m19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
                 </svg>
@@ -260,7 +265,7 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
             {renderConversationGroup(groupedConversations.yesterday, 'Yesterday')}
             {renderConversationGroup(groupedConversations.lastWeek, 'Last Week')}
             {renderConversationGroup(groupedConversations.older, 'Older')}
-            
+
             {/* Empty state */}
             {filteredConversations.length === 0 && !searchQuery && (
               <div className="p-3 text-center">
@@ -268,7 +273,7 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
                 <p className="text-gray-500 text-xs mt-1">Start a new chat to begin</p>
               </div>
             )}
-            
+
             {/* No search results */}
             {filteredConversations.length === 0 && searchQuery && (
               <div className="p-3 text-center">
@@ -280,7 +285,6 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
         )}
       </div>
 
-
       {/* Footer */}
       <footer className="p-3 border-t border-white/10">
         <div
@@ -288,15 +292,18 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
           onClick={handleOpenSettings}
         >
           <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-sm font-semibold">{user?.name=='none'? 'U' : user?.name.slice(0)}</span>
+            <span className="text-white text-sm font-semibold">
+              {user?.name == 'none' ? 'U' : user?.name.slice(0)}
+            </span>
           </div>
           <div className="text-sm flex-1 min-w-0">
-            <p className="text-white font-semibold truncate">{user?.name=='none'? 'User' : user?.name}</p>
-            <p className="text-gray-400 truncate">{user?.email=='none'? 'User' : user?.email}</p>
+            <p className="text-white font-semibold truncate">
+              {user?.name == 'none' ? 'User' : user?.name}
+            </p>
+            <p className="text-gray-400 truncate">{user?.email == 'none' ? 'User' : user?.email}</p>
           </div>
         </div>
       </footer>
-
 
       <DeleteConfirmationDialog
         isOpen={showDeleteDialog}
@@ -307,7 +314,5 @@ export const Sidebar = ({ isVisible = true, userId }: SidebarProps) => {
         description={`Are you sure you want to delete ? This action cannot be undone.`}
       />
     </aside>
-
-    
   )
 }
