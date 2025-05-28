@@ -108,30 +108,79 @@ export const ChatArea = () => {
   const togglePopup = () => setIsPopupVisible(!isPopupVisible)
 
   // Version alternative avec Promise pour un meilleur contrôle
-  const simulateWordByWordStreaming = (
+  const simulateWordByWordStreamingWithFallback = (
     fullText: string,
     messageId: string,
-    delay = 100
+    delay = 100,
+    fallbackDelay = 3000 // Si inactive plus de 3s, affichage instantané
   ): Promise<void> => {
     return new Promise((resolve) => {
       const words = fullText.split(' ')
       let wordIndex = 0
-
-      const interval = setInterval(() => {
+      let intervalId: NodeJS.Timeout | null = null
+      let fallbackTimeoutId: NodeJS.Timeout | null = null
+      let isActive = !document.hidden
+      
+      const updateText = () => {
         wordIndex++
         const currentText = words.slice(0, wordIndex).join(' ')
-
         setMessages((prev) =>
           prev.map((msg) => (msg.id === messageId ? { ...msg, text: currentText } : msg))
         )
-
+        
         if (wordIndex >= words.length) {
-          clearInterval(interval)
+          cleanup()
           resolve()
         }
-      }, delay)
+      }
+      
+      const showFullText = () => {
+        setMessages((prev) =>
+          prev.map((msg) => (msg.id === messageId ? { ...msg, text: fullText } : msg))
+        )
+        cleanup()
+        resolve()
+      }
+      
+      const cleanup = () => {
+        if (intervalId) clearInterval(intervalId)
+        if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId)
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+      }
+      
+      const handleVisibilityChange = () => {
+        if (document.hidden) {
+          isActive = false
+          if (intervalId) {
+            clearInterval(intervalId)
+            intervalId = null
+          }
+          // Programmer l'affichage instantané après le délai
+          fallbackTimeoutId = setTimeout(showFullText, fallbackDelay)
+        } else {
+          isActive = true
+          if (fallbackTimeoutId) {
+            clearTimeout(fallbackTimeoutId)
+            fallbackTimeoutId = null
+          }
+          if (wordIndex < words.length) {
+            intervalId = setInterval(updateText, delay)
+          }
+        }
+      }
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+      
+      if (isActive) {
+        intervalId = setInterval(updateText, delay)
+      } else {
+        // Si déjà inactive au démarrage, afficher directement
+        showFullText()
+      }
     })
   }
+  
+  
 
   // Fonction sendMessage corrigée
   const sendMessage = async () => {
@@ -154,7 +203,7 @@ export const ChatArea = () => {
       }
       const reply = await handleChatMessage(conv?.id, userMessage)
       setIsWriting(true)
-      await simulateWordByWordStreaming(reply.content, tmpAssistantId)
+      await simulateWordByWordStreamingWithFallback(reply.content, tmpAssistantId)
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === tmpId

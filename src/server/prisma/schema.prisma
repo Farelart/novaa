@@ -16,6 +16,7 @@ model User {
   hotkey        String   @default("space")
   appearance    String   @default("system")
   defaultModel  String   @default("gemini-flash")
+  Memory        String   @default("")
   created_at    DateTime @default(now())
   plan          Plan     @relation(fields: [planId], references: [id])
   planId        Int      @unique
